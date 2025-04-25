@@ -50,11 +50,7 @@ struct AtomicExpr : Expr {
     }
 
     void print_as_expr(char var) override {
-        if (constant >= 1 && power == 0 ||
-            constant > 1 && power >= 1) 
-        {
-            std::cout << constant;
-        }
+        std::cout << constant;
         if (power == 1) std::cout << var;
         else if (power >= 1) std::cout << var << "^" << power;
     }

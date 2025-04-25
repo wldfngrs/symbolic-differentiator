@@ -105,7 +105,7 @@ int main() {
             continue;
         }
 
-        auto ast = SD_parse_to_ast(tokens, true);
+        auto ast = SD_parse_to_ast(tokens, false);
         if (ast->kind == SD_ExprKind::BOTCHED) {
             BotchedExpr* botched = static_cast<BotchedExpr*>(ast.get());
             std::cout << botched->message << "\n";
