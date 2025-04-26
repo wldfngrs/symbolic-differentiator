@@ -1,5 +1,5 @@
 # Symbolic Differentiator
-Command line tool for computing differentials of single variable polynomial expression inputs.
+Command line tool for computing differentials of single variable polynomial expressions.
 
 ## Compiling
 Clone the repository, navigate to the project directory and run the following command on the terminal:
