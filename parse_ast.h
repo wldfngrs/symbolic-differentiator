@@ -34,8 +34,10 @@ struct Expr {
 
     virtual void print_as_ast() {;}
     virtual void print_as_expr(char var) {;}
-    virtual void differentiate(std::vector<std::unique_ptr<Expr>>& kch) {
-        ;
+    virtual void differentiate(std::vector<std::unique_ptr<Expr>>& kch) {;}
+    virtual std::unique_ptr<Expr> simplify() {
+        std::unique_ptr<Expr> expr;
+        return std::move(expr);
     }
 };
 
@@ -61,6 +63,12 @@ struct AtomicExpr : Expr {
         auto atomic_diff = std::make_unique<AtomicExpr>(new_constant, new_power);
         atomic_diff->kind = SD_ExprKind::ATOMIC;
         expr_vec.push_back(std::move(atomic_diff));
+    }
+
+    std::unique_ptr<Expr> simplify() override {
+        auto atomic_simp = std::make_unique<AtomicExpr>(constant, power);
+        atomic_simp->kind = SD_ExprKind::ATOMIC;
+        return std::move(atomic_simp);
     }
 };
 
@@ -116,6 +124,48 @@ struct BinExpr : Expr {
             sum->kind = SD_ExprKind::BINARY;
 
             expr_vec.push_back(std::move(sum));
+        }
+    }
+
+    std::unique_ptr<Expr> simplify() override {
+        auto left_simp = left->simplify();
+        auto right_simp = right->simplify();
+
+        if (op == '+' || op == '-') {
+            if (left_simp->kind == SD_ExprKind::ATOMIC && right_simp->kind == SD_ExprKind::ATOMIC) {
+                auto left_atomic = static_cast<AtomicExpr*>(left_simp.get());
+                auto right_atomic = static_cast<AtomicExpr*>(right_simp.get());
+
+                if (left_atomic->power == right_atomic->power) {
+                    auto new_constant = (op == '+' ? left_atomic->constant + right_atomic->constant : left_atomic->constant - right_atomic->constant);
+                    auto new_atomic = std::make_unique<AtomicExpr>(new_constant, left_atomic->power);
+                    new_atomic->kind = SD_ExprKind::ATOMIC;
+                    return std::move(new_atomic);
+                } else {
+                    auto new_expr = std::make_unique<BinExpr>((op == '+'? '+' : '-'), std::move(left_simp), std::move(right_simp));
+                    new_expr->kind = SD_ExprKind::BINARY;
+                    return std::move(new_expr);
+                }
+            } else {
+                auto new_expr = std::make_unique<BinExpr>((op == '+'? '+' : '-'), std::move(left_simp), std::move(right_simp));
+                new_expr->kind = SD_ExprKind::BINARY;
+                return std::move(new_expr);
+            }
+        } else {
+            if (left_simp->kind == SD_ExprKind::ATOMIC && right_simp->kind == SD_ExprKind::ATOMIC) {
+                auto left_atomic = static_cast<AtomicExpr*>(left_simp.get());
+                auto right_atomic = static_cast<AtomicExpr*>(right_simp.get());
+
+                auto new_constant = left_atomic->constant * right_atomic->constant;
+                auto new_power = left_atomic->power + right_atomic->power;
+                auto new_atomic = std::make_unique<AtomicExpr>(new_constant, new_power);
+                new_atomic->kind = SD_ExprKind::ATOMIC;
+                return std::move(new_atomic);
+            } else {
+                auto new_expr = std::make_unique<BinExpr>('*', std::move(left_simp), std::move(right_simp));
+                new_expr->kind = SD_ExprKind::BINARY;
+                return std::move(new_expr);
+            }
         }
     }
 };

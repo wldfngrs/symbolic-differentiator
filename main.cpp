@@ -112,6 +112,7 @@ int main() {
             tokens.clear();
             continue;
         }
+        ast = ast->simplify();
 
         SD_differentiate_and_print(std::move(ast), var);
         tokens.clear();
